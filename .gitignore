@@ -1,0 +1,27 @@
+# Jetbrains IDE Files
+.idea/
+*.iml
+cmake-build-*/
+
+# Build Files
+build/
+dist/
+*.bin
+*.elf
+*.hex
+
+# Core dumps
+core
+!/core
+
+# EAGLE temp files
+*.b#*
+*.s#*
+*.zip
+
+# LTSpice temp file
+*.log
+*.net
+*.raw
+*.fft
+*.plt
