@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include "cli.h"
+#include "regulator.h"
 
 static volatile bool ok_to_send = false;
 
@@ -51,6 +52,7 @@ static volatile uint8_t rxCnt = 0;
 
 int main(void) {
     initSysClock();
+    initRegulator();
     sei();
     PMIC.CTRL |= PMIC_LOLVLEN_bm;
 
@@ -65,7 +67,6 @@ int main(void) {
                while waiting for the device */
             int16_t c = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
             if(c >= 0) {
-                CDC_Device_SendByte(&VirtualSerial_CDC_Interface, (uint8_t)c);
                 if(c == '\n' || c == '\r') {
                     rxBuffer[rxCnt] = 0;
                     processCommand((char *)rxBuffer);

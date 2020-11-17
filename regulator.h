@@ -6,12 +6,16 @@
 #define AVR_MPPBC_REGULATOR_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 void initRegulator();
-void setOutputVoltage(uint8_t target);
-void setInputVoltage(uint8_t target);
-uint8_t getOutputVoltage();
-uint8_t getInputVoltage();
+void enableRegulator(bool enabled);
+void setOutputVoltage(uint16_t limit);
+void setInputVoltage(uint16_t limit);
+uint16_t getOutputVoltage();
+uint16_t getOutputVoltageStep();
+uint16_t getInputVoltage();
+uint16_t getInputVoltageStep();
 uint16_t measureOutputVoltage();
 uint16_t measureInputVoltage();
 
