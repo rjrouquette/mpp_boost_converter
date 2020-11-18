@@ -97,7 +97,7 @@ void setInputVoltage(uint16_t limit) {
     if(limit > 10000u) limit = 10000u;
 
     uint32_t tmp = limit;
-    tmp *= 4095u;
+    tmp *= 4096u;
     tmp += 5431u;
     tmp /= 10862u;
     DACB.CH0DATA = (uint16_t) tmp;
@@ -119,8 +119,8 @@ uint16_t getOutputVoltageStep() {
 uint16_t getInputVoltage() {
     uint32_t tmp = DACB.CH0DATA & 0xfffu;
     tmp *= 10862u;
-    tmp += 2047u;
-    tmp /= 4095u;
+    tmp += 2048u;
+    tmp /= 4096u;
     return (uint16_t) tmp;
 }
 
