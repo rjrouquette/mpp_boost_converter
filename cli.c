@@ -6,6 +6,7 @@
 #include "regulator.h"
 #include <stdio.h>
 #include <string.h>
+#include <avr/io.h>
 
 static volatile char txBuff[64];
 
@@ -35,6 +36,9 @@ void processCommand(const char *cmd) {
         sendString((char *)txBuff);
 
         sprintf((char *)txBuff, "input voltage = %d\r\n", measureInputVoltage());
+        sendString((char *)txBuff);
+
+        sprintf((char *)txBuff, "comps = %x\r\n", ACA.STATUS);
         sendString((char *)txBuff);
         return;
     }

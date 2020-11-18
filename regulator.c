@@ -20,8 +20,8 @@ void initRegulator() {
     ENABLE_PORT.OUTCLR = ENABLE_PIN;
 
     // configure comparator output (wired and)
-    COMPARATOR_PORT.PIN6CTRL = 0x2bu;   // wired-and, sense level
-    COMPARATOR_PORT.PIN7CTRL = 0x68u;   // wired-and, inverted
+    COMPARATOR_PORT.PIN6CTRL = 0x68u;   // wired-and, inverted (ACA0)
+    COMPARATOR_PORT.PIN7CTRL = 0x2bu;   // wired-and, sense level (ACA1)
     COMPARATOR_PORT.DIRSET = COMPARATOR_OUT;
     COMPARATOR_PORT.OUTCLR = COMPARATOR_OUT;
 
@@ -37,8 +37,10 @@ void initRegulator() {
     ACA.AC1CTRL = 0x01u;    // enable comparator 1
 
     // configure DACB
+    NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc;
     DACB.CH0OFFSETCAL = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, DACB0OFFCAL));
     DACB.CH0GAINCAL   = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, DACB0GAINCAL));
+    NVM.CMD = 0x00;
     DACB.CTRLC = DAC_REFSEL_AVCC_gc;
     DACB.CTRLB = DAC_CHSEL_SINGLE_gc;
     DACB.CTRLA = DAC_IDOEN_bm | DAC_CH0EN_bm | DAC_ENABLE_bm;
