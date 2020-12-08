@@ -70,7 +70,7 @@ void initRegulator() {
     EVSYS.CH0MUX = EVSYS_CHMUX_RTC_OVF_gc;
 
     // configure ADCA for sweep on event 0
-    ADCA.PRESCALER = ADC_PRESCALER_DIV512_gc;
+    ADCA.PRESCALER = ADC_PRESCALER_DIV256_gc;
     ADCA.EVCTRL = ADC_SWEEP_01_gc | ADC_EVACT_SWEEP_gc | ADC_EVSEL_0123_gc;
     ADCA.REFCTRL = ADC_REFSEL_AREFA_gc; // Vcc (3.3V)
     ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc; // Unsigned 12-bit right-adjusted
