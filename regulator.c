@@ -20,6 +20,11 @@ static volatile struct {
     uint8_t rdy;
 } adcFilter[2];
 
+volatile uint16_t pwCharge;
+volatile uint16_t pwPeriod;
+volatile uint8_t pwUpdateA;
+volatile uint8_t pwUpdateB;
+
 void initRegulator() {
     // configure regulator enable pin
     ENABLE_PORT.DIRSET = ENABLE_PIN;
@@ -107,14 +112,20 @@ void initRegulator() {
     PORTD.DIRSET = PIN5_bm;
     PORTE.DIRSET = PIN3_bm;
     EVSYS.CH2MUX = EVSYS_CHMUX_TCE0_CCA_gc;
+    TCE0.INTCTRLA = TC_OVFINTLVL_HI_gc;
+    TCE0.INTCTRLB = TC_CCAINTLVL_HI_gc;
     TCE0.CTRLB = TC0_CCDEN_bm | TC_WGMODE_SINGLESLOPE_gc;
     TCD1.CTRLB = TC1_CCBEN_bm | TC_WGMODE_SINGLESLOPE_gc;
     TCD1.CTRLD = TC_EVACT_RESTART_gc | TC_EVSEL_CH2_gc;
-    TCE0.CCD = 4480u;
-    TCE0.CCA = 4482u;
-    TCE0.PER = 8964u;
-    TCD1.CCB = 4480u;
-    TCD1.PER = 8964u;
+    pwCharge = 4480u;
+    pwPeriod = 8964u;
+    pwUpdateA = 0;
+    pwUpdateB = 0;
+    TCE0.CCD = pwCharge;
+    TCE0.CCA = pwPeriod >> 1u;
+    TCE0.PER = pwPeriod;
+    TCD1.CCB = pwCharge;
+    TCD1.PER = 0xffffu;
     // start timers
     TCE0.CTRLA = TC_CLKSEL_DIV1_gc;
     TCD1.CTRLA = TC_CLKSEL_DIV1_gc;
@@ -250,7 +261,7 @@ void updateRegulatorPulseWidth() {
     // compute charge width
     tmp = 448000ul;
     tmp /= iv;
-    uint16_t cw = tmp;
+    pwCharge = tmp;
 
     // compute discharge width
     tmp = 448000ul;
@@ -258,20 +269,23 @@ void updateRegulatorPulseWidth() {
     uint16_t dw = tmp;
 
     // compute pwm period
-    uint16_t per = cw + dw + 4;
+    pwPeriod = pwCharge + dw + 4;
+    pwUpdateA = 1;
+    pwUpdateB = 1;
+}
 
-    // wait for overflow (prevent glitching)
-    TCE0.INTFLAGS = TC0_OVFIF_bm;
-    while(!(TCE0.INTFLAGS & TC0_OVFIF_bm));
-    // update timer values
-    TCE0.CCD = cw;
-    TCE0.CCA = per >> 1u;
-    TCE0.PER = per;
+ISR(TCE0_OVF_vect) {
+    if(pwUpdateA) {
+        TCE0.CCD = pwCharge;
+        TCE0.CCA = pwPeriod >> 1u;
+        TCE0.PER = pwPeriod;
+        pwUpdateA = 0;
+    }
+}
 
-    // wait for overflow (prevent glitching)
-    TCD1.INTFLAGS = TC0_OVFIF_bm;
-    while(!(TCD1.INTFLAGS & TC0_OVFIF_bm));
-    // update timer values
-    TCD1.CCB = cw;
-    TCD1.PER = per;
+ISR(TCE0_CCA_vect) {
+    if(pwUpdateB) {
+        TCD1.CCB = pwCharge;
+        pwUpdateB = 0;
+    }
 }
