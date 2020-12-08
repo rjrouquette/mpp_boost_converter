@@ -154,8 +154,8 @@ void setOutputVoltage(uint16_t limit) {
 }
 
 void setInputVoltage(uint16_t limit) {
-    // safety check (95.00 V)
-    if(limit > 9500u) limit = 9500u;
+    // safety check (85.00 V)
+    if(limit > 8500u) limit = 8500u;
 
     uint32_t tmp = limit;
     tmp *= 4096u;
@@ -178,7 +178,7 @@ uint16_t getOutputVoltageStep() {
 
 uint16_t getInputVoltage() {
     uint32_t tmp = DACB.CH1DATA & 0xfffu;
-    tmp *= 10862u;
+    tmp *= 8887u;
     tmp += 2048u;
     tmp /= 4096u;
     return (uint16_t) tmp;
@@ -191,7 +191,7 @@ uint16_t getInputVoltageStep() {
 inline uint16_t computeOutputVoltage(uint16_t adc) {
     adc = (adc > 190u) ? (adc - 190u) : 0;
     uint32_t tmp = adc;
-    tmp *= 23500u;
+    tmp *= 19227u;
     tmp += 2048u;
     tmp /= 4096u;
     return (uint16_t) tmp;
