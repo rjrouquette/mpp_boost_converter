@@ -189,11 +189,11 @@ uint16_t getInputVoltageStep() {
 }
 
 inline uint16_t computeOutputVoltage(uint16_t adc) {
-    adc = (adc > 200) ? (adc - 200) : 0;
+    adc = (adc > 190u) ? (adc - 190u) : 0;
     uint32_t tmp = adc;
     tmp *= 23500u;
-    tmp += 1948u;
-    tmp /= 3896u;
+    tmp += 2048u;
+    tmp /= 4096u;
     return (uint16_t) tmp;
 }
 
@@ -212,11 +212,11 @@ ISR(ADCA_CH0_vect) {
 }
 
 inline uint16_t computeInputVoltage(uint16_t adc) {
-    adc = (adc > 200) ? (adc - 200) : 0;
+    adc = (adc > 190u) ? (adc - 190u) : 0;
     uint32_t tmp = adc;
     tmp *= 10862u;
-    tmp += 1948u;
-    tmp /= 3896u;
+    tmp += 2048u;
+    tmp /= 4096u;
     return (uint16_t) tmp;
 }
 
