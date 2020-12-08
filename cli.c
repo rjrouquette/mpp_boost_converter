@@ -55,7 +55,7 @@ void processCommand(const char *cmd) {
         ptr = appendStr(ptr, " V\r\nfan speed = ");
         ptr = appendInteger(ptr, measureFanSpeed());
 
-        ptr = appendStr(ptr, " RMP\r\npulse width = ");
+        ptr = appendStr(ptr, " RPM\r\npulse width = ");
         ptr = appendDecimal(ptr, ((uint32_t)TCD1.CCB) * 100 / 32);
 
         ptr = appendStr(ptr, " us\r\npulse period = ");

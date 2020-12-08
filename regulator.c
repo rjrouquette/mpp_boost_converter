@@ -9,18 +9,13 @@
 #include "regulator.h"
 
 #define ENABLE_PORT PORTB
-#define ENABLE_PIN (0x01u)
-
-#define COMPARATOR_PORT PORTA
-#define COMPARATOR_OUT (0xc0u)
-#define COMPARATOR_IN (0x38u)
+#define ENABLE_PIN PIN0_bm
 
 volatile uint16_t fanSpeed;
 
 static volatile struct {
     uint32_t acc;
     uint16_t res;
-    uint16_t raw;
     uint8_t cnt;
     uint8_t rdy;
 } adcFilter[2];
@@ -31,16 +26,16 @@ void initRegulator() {
     ENABLE_PORT.OUTCLR = ENABLE_PIN;
 
     // configure comparator output (wired and)
-    COMPARATOR_PORT.PIN7CTRL = 0x68u;   // wired-and, inverted (ACA0)
-    COMPARATOR_PORT.PIN6CTRL = 0x2bu;   // wired-and, sense level (ACA1)
-    COMPARATOR_PORT.DIRSET = COMPARATOR_OUT;
-    COMPARATOR_PORT.OUTCLR = COMPARATOR_OUT;
+    PORTA.PIN7CTRL = 0x68u;   // wired-and, inverted (ACA0)
+    PORTA.PIN6CTRL = 0x2bu;   // wired-and, sense level (ACA1)
+    PORTA.DIRSET = PIN6_bm | PIN7_bm;
+    PORTA.OUTCLR = PIN6_bm | PIN7_bm;
 
     // configure analog comparators
-    COMPARATOR_PORT.DIRCLR = COMPARATOR_IN;
-    COMPARATOR_PORT.PIN3CTRL = 0x07u;
-    COMPARATOR_PORT.PIN4CTRL = 0x07u;
-    COMPARATOR_PORT.PIN5CTRL = 0x07u;
+    PORTA.DIRCLR = PIN3_bm | PIN4_bm | PIN5_bm;
+    PORTA.PIN3CTRL = 0x07u;
+    PORTA.PIN4CTRL = 0x07u;
+    PORTA.PIN5CTRL = 0x07u;
 
     ACA.AC0MUXCTRL = AC_MUXPOS_PIN3_gc | AC_MUXNEG_DAC_gc; // pin PA3 vs DAC0 (internal)
     ACA.AC1MUXCTRL = AC_MUXPOS_PIN4_gc | AC_MUXNEG_PIN5_gc; // pin PA4 vs DAC1 (pin PA5)
@@ -88,12 +83,10 @@ void initRegulator() {
     // initialize ADC accumulators
     adcFilter[0].acc = 0;
     adcFilter[0].res = 0;
-    adcFilter[0].raw = 0;
     adcFilter[0].cnt = 0;
     adcFilter[0].rdy = 0;
     adcFilter[1].acc = 0;
     adcFilter[1].res = 0;
-    adcFilter[1].raw = 0;
     adcFilter[1].cnt = 0;
     adcFilter[1].rdy = 0;
 
@@ -109,7 +102,6 @@ void initRegulator() {
     TCC0.CTRLD = TC_EVACT_FRQ_gc | TC_EVSEL_CH1_gc;
     TCC0.CTRLB = TC0_CCAEN_bm;
     TCC0.CTRLA = TC_CLKSEL_DIV1024_gc;
-    TCC0.INTCTRLB = TC_CCAINTLVL_LO_gc;
 
     // configure PWM outputs
     PORTD.DIRSET = PIN5_bm;
@@ -191,14 +183,11 @@ inline uint16_t computeOutputVoltage(uint16_t adc) {
 }
 
 uint16_t measureOutputVoltage() {
-    cli();
     uint16_t adc = adcFilter[0].res;
-    sei();
     return computeOutputVoltage(adc);
 }
 
 ISR(ADCA_CH0_vect) {
-    adcFilter[0].raw = ADCA.CH0.RES;
     adcFilter[0].acc += ADCA.CH0.RES;
     if(++(adcFilter[0].cnt) == 0) {
         adcFilter[0].res = (uint16_t) (adcFilter[0].acc >> 8u);
@@ -217,14 +206,11 @@ inline uint16_t computeInputVoltage(uint16_t adc) {
 }
 
 uint16_t measureInputVoltage() {
-    cli();
     uint16_t adc = adcFilter[1].res;
-    sei();
     return computeInputVoltage(adc);
 }
 
 ISR(ADCA_CH1_vect) {
-    adcFilter[1].raw = ADCA.CH1.RES;
     adcFilter[1].acc += ADCA.CH1.RES;
     if(++(adcFilter[1].cnt) == 0) {
         adcFilter[1].res = (uint16_t) (adcFilter[1].acc >> 8u);
@@ -234,19 +220,10 @@ ISR(ADCA_CH1_vect) {
 }
 
 uint16_t measureFanSpeed() {
-    // snapshot of fan speed
-    cli();
-    uint16_t fspeed = fanSpeed;
-    sei();
-
     // assume 4-pole fan
     uint32_t temp = 937500ul;
-    temp /= fspeed;
+    temp /= TCC0.CCA;
     return (uint16_t) temp;
-}
-
-ISR(TCC0_CCA_vect) {
-    fanSpeed = TCC0.CCA;
 }
 
 void updateRegulatorPulseWidth() {
@@ -258,10 +235,8 @@ void updateRegulatorPulseWidth() {
     adcFilter[1].rdy = 0;
 
     // snapshot adc values
-    cli();
-    uint16_t ov = adcFilter[0].raw;
-    uint16_t iv = adcFilter[1].raw;
-    sei();
+    uint16_t ov = ADCA.CH0.RES;
+    uint16_t iv = ADCA.CH1.RES;
 
     // compute voltage
     iv = computeInputVoltage(iv);
