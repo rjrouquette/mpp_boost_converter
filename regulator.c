@@ -276,18 +276,21 @@ void updateRegulatorPulseWidth() {
 
     // compute pwm period (pad with 250 ns)
     pwPeriod = pwCharge + dw + 8;
-    TCE0.INTCTRLA |= TC_OVFINTLVL_HI_gc;
-    TCE0.INTCTRLB |= TC_CCAINTLVL_HI_gc;
+    // schedule updates using interrupts
+    TCE0.INTFLAGS = TC0_OVFIF_bm;
+    TCE0.INTCTRLA = TC_OVFINTLVL_HI_gc;
+    TCE0.INTFLAGS = TC0_CCAIF_bm;
+    TCE0.INTCTRLB = TC_CCAINTLVL_HI_gc;
 }
 
 ISR(TCE0_OVF_vect) {
     TCE0.CCD = pwCharge;
     TCE0.CCA = pwPeriod >> 1u;
     TCE0.PER = pwPeriod;
-    TCE0.INTCTRLA &= ~TC0_OVFINTLVL_gm;
+    TCE0.INTCTRLA = 0;
 }
 
 ISR(TCE0_CCA_vect) {
     TCD1.CCB = pwCharge;
-    TCE0.INTCTRLB &= ~TC0_CCAINTLVL_gm;
+    TCE0.INTCTRLB = 0;
 }
