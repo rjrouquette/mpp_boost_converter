@@ -30,17 +30,21 @@ void initRegulator() {
     ENABLE_PORT.DIRSET = ENABLE_PIN;
     ENABLE_PORT.OUTCLR = ENABLE_PIN;
 
+    // configure analog reference pin
+    PORTA.DIRCLR = PIN0_bm;
+    PORTA.PIN0CTRL = PORT_OPC_TOTEM_gc | PORT_ISC_INPUT_DISABLE_gc;
+
     // configure comparator output (wired and)
-    PORTA.PIN7CTRL = 0x68u;   // wired-and, inverted (ACA0)
-    PORTA.PIN6CTRL = 0x2bu;   // wired-and, sense level (ACA1)
+    PORTA.PIN7CTRL = PORT_OPC_WIREDAND_gc | PORT_INVEN_bm;      // wired-and, inverted (ACA0)
+    PORTA.PIN6CTRL = PORT_OPC_WIREDAND_gc | PORT_ISC_LEVEL_gc;  // wired-and, sense level (ACA1)
     PORTA.DIRSET = PIN6_bm | PIN7_bm;
     PORTA.OUTCLR = PIN6_bm | PIN7_bm;
 
     // configure analog comparators
     PORTA.DIRCLR = PIN3_bm | PIN4_bm | PIN5_bm;
-    PORTA.PIN3CTRL = 0x07u;
-    PORTA.PIN4CTRL = 0x07u;
-    PORTA.PIN5CTRL = 0x07u;
+    PORTA.PIN3CTRL = PORT_OPC_TOTEM_gc | PORT_ISC_INPUT_DISABLE_gc;
+    PORTA.PIN4CTRL = PORT_OPC_TOTEM_gc | PORT_ISC_INPUT_DISABLE_gc;
+    PORTA.PIN5CTRL = PORT_OPC_TOTEM_gc | PORT_ISC_INPUT_DISABLE_gc;
 
     ACA.AC0MUXCTRL = AC_MUXPOS_PIN3_gc | AC_MUXNEG_DAC_gc; // pin PA3 vs DAC0 (internal)
     ACA.AC1MUXCTRL = AC_MUXPOS_PIN4_gc | AC_MUXNEG_PIN5_gc; // pin PA4 vs DAC1 (pin PA5)
