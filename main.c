@@ -136,6 +136,12 @@ void initSysClock(void) {
     CCP = CCP_IOREG_gc; // Security Signature to modify clock
     CLK.CTRL = CLK_SCLKSEL_PLL_gc; // Select PLL
     CLK.PSCTRL = CLK_PSADIV_1_gc | CLK_PSBCDIV_1_1_gc; // CPU 32 MHz
+
+    // enable RTC
+    CLK.RTCCTRL = CLK_RTCSRC_TOSC32_gc | CLK_RTCEN_bm;
+    // configure RTC
+    RTC.PER = 31u;
+    RTC.CTRL = RTC_PRESCALER_DIV1_gc;
 }
 
 /** Event handler for the library USB Connection event. */

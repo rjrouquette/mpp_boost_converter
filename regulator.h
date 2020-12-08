@@ -18,5 +18,6 @@ uint16_t getInputVoltage();
 uint16_t getInputVoltageStep();
 uint16_t measureOutputVoltage();
 uint16_t measureInputVoltage();
+uint16_t measureFanSpeed();
 
 #endif //AVR_MPPBC_REGULATOR_H

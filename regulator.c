@@ -2,6 +2,7 @@
 // Created by robert on 11/16/20.
 //
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <stddef.h>
@@ -12,7 +13,15 @@
 
 #define COMPARATOR_PORT PORTA
 #define COMPARATOR_OUT (0xc0u)
-#define COMPARATOR_IN (0x18u)
+#define COMPARATOR_IN (0x1cu)
+
+volatile uint16_t fanSpeed;
+
+static volatile struct {
+    uint32_t acc;
+    uint16_t res;
+    uint8_t cnt;
+} adcFilter[2];
 
 void initRegulator() {
     // configure regulator enable pin
@@ -29,6 +38,7 @@ void initRegulator() {
     COMPARATOR_PORT.DIRCLR = COMPARATOR_IN;
     COMPARATOR_PORT.PIN3CTRL = 0x07u;
     COMPARATOR_PORT.PIN4CTRL = 0x07u;
+    COMPARATOR_PORT.PIN5CTRL = 0x07u;
 
     ACA.AC0MUXCTRL = AC_MUXPOS_PIN3_gc | AC_MUXNEG_DAC_gc; // pin PA3 vs DAC0 (internal)
     ACA.AC1MUXCTRL = AC_MUXPOS_PIN4_gc | AC_MUXNEG_PIN5_gc; // pin PA4 vs DAC1 (pin PA5)
@@ -48,9 +58,12 @@ void initRegulator() {
     DACB.CTRLA = DAC_IDOEN_bm | DAC_CH0EN_bm| DAC_CH1EN_bm | DAC_ENABLE_bm;
 
 
-    // configure ADCA
+    // configure event 0 for RTC (1.024 kHz)
+    EVSYS.CH0MUX = EVSYS_CHMUX_RTC_OVF_gc;
+
+    // configure ADCA for sweep on event 0
     ADCA.PRESCALER = ADC_PRESCALER_DIV512_gc;
-    ADCA.EVCTRL = 0x00;
+    ADCA.EVCTRL = ADC_SWEEP_01_gc | ADC_EVACT_SWEEP_gc | ADC_EVSEL_0123_gc;
     ADCA.REFCTRL = ADC_REFSEL_AREFA_gc; // Vcc (3.3V)
     ADCA.CTRLB = ADC_RESOLUTION_12BIT_gc; // Unsigned 12-bit right-adjusted
     NVM.CMD  = NVM_CMD_READ_CALIB_ROW_gc;
@@ -59,17 +72,37 @@ void initRegulator() {
     NVM.CMD = 0x00;
 
     // Channel 0 (pin 0)
-    ADCA.CH0.INTCTRL = 0x00u; // no interrupt
+    ADCA.CH0.INTCTRL = ADC_CH_INTLVL_MED_gc;
     ADCA.CH0.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
     ADCA.CH0.MUXCTRL = ADC_CH_MUXPOS_PIN3_gc;
 
     // Channel 1 (pin 1)
-    ADCA.CH1.INTCTRL = 0x00u; // no interrupt
+    ADCA.CH1.INTCTRL = ADC_CH_INTLVL_MED_gc;
     ADCA.CH1.CTRL = ADC_CH_INPUTMODE_SINGLEENDED_gc;
     ADCA.CH1.MUXCTRL = ADC_CH_MUXPOS_PIN4_gc;
 
+    // initialize ADC accumulators
+    adcFilter[0].acc = 0;
+    adcFilter[0].res = 0;
+    adcFilter[0].cnt = 0;
+    adcFilter[1].acc = 0;
+    adcFilter[1].res = 0;
+    adcFilter[1].cnt = 0;
+
     // Enable ADC
     ADCA.CTRLA = 0x01;
+
+    // configure TCC0 for measuring fan speed
+    PORTB.DIRCLR = PIN2_bm;
+    PORTB.PIN2CTRL = PORT_OPC_PULLUP_gc | PORT_ISC_RISING_gc;
+    EVSYS.CH1MUX = EVSYS_CHMUX_PORTB_PIN2_gc;
+    TCC0.PER = 0xffffu;
+    TCC0.CTRLD = TC_EVACT_FRQ_gc | TC_EVSEL_CH1_gc;
+    TCC0.CTRLB = TC0_CCAEN_bm;
+    TCC0.CTRLA = TC_CLKSEL_DIV1024_gc;
+    TCC0.INTCTRLB = TC_CCAINTLVL_LO_gc;
+
+    fanSpeed = 0;
 }
 
 void enableRegulator(bool enabled) {
@@ -126,11 +159,7 @@ uint16_t getInputVoltageStep() {
 }
 
 uint16_t measureOutputVoltage() {
-    ADCA.CH0.CTRL |= ADC_CH_START_bm;
-    while(!(ADCA.CH0.INTFLAGS & 0x01u));
-    ADCA.CH0.INTFLAGS = 0x01u;
-
-    uint32_t tmp = ADCA.CH0.RES & 0xfffu;
+    uint32_t tmp = adcFilter[0].res;
     tmp = (tmp > 200) ? (tmp - 200) : 0;
     tmp *= 23500u;
     tmp += 1948u;
@@ -138,12 +167,16 @@ uint16_t measureOutputVoltage() {
     return (uint16_t) tmp;
 }
 
-uint16_t measureInputVoltage() {
-    ADCA.CH1.CTRL |= ADC_CH_START_bm;
-    while(!(ADCA.CH1.INTFLAGS & 0x01u));
-    ADCA.CH1.INTFLAGS = 0x01u;
+ISR(ADCA_CH0_vect) {
+    adcFilter[0].acc += ADCA.CH0.RES;
+    if(++(adcFilter[0].cnt) == 0) {
+        adcFilter[0].res = (uint16_t) (adcFilter[0].acc >> 8u);
+        adcFilter[0].acc = 0;
+    }
+}
 
-    uint32_t tmp = ADCA.CH1.RES & 0xfffu;
+uint16_t measureInputVoltage() {
+    uint32_t tmp = adcFilter[1].res;;
     tmp = (tmp > 200) ? (tmp - 200) : 0;
     tmp *= 10862u;
     tmp += 1948u;
@@ -151,3 +184,21 @@ uint16_t measureInputVoltage() {
     return (uint16_t) tmp;
 }
 
+ISR(ADCA_CH1_vect) {
+    adcFilter[1].acc += ADCA.CH1.RES;
+    if(++(adcFilter[1].cnt) == 0) {
+        adcFilter[1].res = (uint16_t) (adcFilter[1].acc >> 8u);
+        adcFilter[1].acc = 0;
+    }
+}
+
+uint16_t measureFanSpeed() {
+    // assume 4-pole fan
+    uint32_t temp = 937500ul;
+    temp /= fanSpeed;
+    return (uint16_t) temp;
+}
+
+ISR(TCC0_CCA_vect) {
+    fanSpeed = TCC0.CCA;
+}

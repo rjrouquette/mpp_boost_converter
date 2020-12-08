@@ -12,6 +12,7 @@ void sendString(char *msg);
 
 char *appendStr(char *buff, const char *str);
 char *appendDecimal(char *buff, uint16_t value);
+char *appendInteger(char *buff, uint16_t value);
 bool parseDecimal(const char *str, uint16_t *value);
 
 void processCommand(const char *cmd) {
@@ -51,7 +52,10 @@ void processCommand(const char *cmd) {
         ptr = appendStr(ptr, " V\r\ninput voltage = ");
         ptr = appendDecimal(ptr, measureInputVoltage());
 
-        ptr = appendStr(ptr, " V\r\ncomparators = ");
+        ptr = appendStr(ptr, " V\r\nfan speed = ");
+        ptr = appendInteger(ptr, measureFanSpeed());
+
+        ptr = appendStr(ptr, " RPM\r\ncomparators = ");
         *(ptr++) = (char) ('0' + (ACA.STATUS & 0x3u));
         *ptr = 0;
 
@@ -125,6 +129,30 @@ char *appendDecimal(char *buff, uint16_t value) {
     temp[5] = (char) (value % 10); value /= 10; temp[5] += '0';
     temp[4] = (char) (value % 10); value /= 10; temp[4] += '0';
     temp[3] = '.';
+
+    temp[2] = (char) (value % 10); value /= 10; temp[2] += '0';
+    if(value == 0)
+        return appendStr(buff, temp + 2);
+
+    temp[1] = (char) (value % 10); value /= 10; temp[1] += '0';
+    if(value == 0)
+        return appendStr(buff, temp + 1);
+
+    temp[0] = (char) value; temp[0] += '0';
+    return appendStr(buff, temp);
+}
+
+char *appendInteger(char *buff, uint16_t value) {
+    char temp[6];
+    temp[5] = 0;
+
+    temp[4] = (char) (value % 10); value /= 10; temp[4] += '0';
+    if(value == 0)
+        return appendStr(buff, temp + 4);
+
+    temp[3] = (char) (value % 10); value /= 10; temp[3] += '0';
+    if(value == 0)
+        return appendStr(buff, temp + 3);
 
     temp[2] = (char) (value % 10); value /= 10; temp[2] += '0';
     if(value == 0)
