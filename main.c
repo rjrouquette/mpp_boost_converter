@@ -3,7 +3,6 @@
 #include <avr/power.h>
 #include <avr/interrupt.h>
 #include <string.h>
-#include <stdio.h>
 
 #include "descriptors.h"
 
@@ -19,7 +18,7 @@
 static volatile bool ok_to_send = false;
 
 void initSysClock(void);
-void sendString(char *msg);
+inline void sendString(char *msg);
 
 USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface =
         {
@@ -54,25 +53,30 @@ int main(void) {
     initSysClock();
     initRegulator();
     sei();
-    PMIC.CTRL |= PMIC_LOLVLEN_bm;
-
-    PMIC.CTRL |= PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm;
+    PMIC.CTRL |= PMIC_LOLVLEN_bm | PMIC_HILVLEN_bm | PMIC_MEDLVLEN_bm;
     USB_Init();
 
     for(;;) {
-        bool dataActive = USB_DeviceState == DEVICE_STATE_Configured && ok_to_send;
-
         if (USB_DeviceState == DEVICE_STATE_Configured) {
-            /* Must throw away unused bytes from the host, or it will lock up
-               while waiting for the device */
             int16_t c = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
             if(c >= 0) {
                 if(c == '\n' || c == '\r') {
+                    sendString("\r\n");
                     rxBuffer[rxCnt] = 0;
                     processCommand((char *)rxBuffer);
+                    sendString("\r\n> ");
                     rxCnt = 0;
                 } else {
-                    rxBuffer[rxCnt++] = c;
+                    if(c == '\b') {
+                        if(rxCnt)
+                            --rxCnt;
+                    } else {
+                        rxBuffer[rxCnt++] = c;
+                    }
+                    if (ok_to_send) {
+                        CDC_Device_SendByte(&VirtualSerial_CDC_Interface, c);
+                        CDC_Device_Flush(&VirtualSerial_CDC_Interface);
+                    }
                 }
             }
         }
@@ -145,9 +149,7 @@ void EVENT_USB_Device_Disconnect(void)
 /** Event handler for the library USB Configuration Changed event. */
 void EVENT_USB_Device_ConfigurationChanged(void)
 {
-    bool ConfigSuccess = true;
-
-    ConfigSuccess &= CDC_Device_ConfigureEndpoints(&VirtualSerial_CDC_Interface);
+    CDC_Device_ConfigureEndpoints(&VirtualSerial_CDC_Interface);
 }
 
 /** Event handler for the library USB Control Request reception event. */

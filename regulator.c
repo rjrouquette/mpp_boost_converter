@@ -20,8 +20,8 @@ void initRegulator() {
     ENABLE_PORT.OUTCLR = ENABLE_PIN;
 
     // configure comparator output (wired and)
-    COMPARATOR_PORT.PIN6CTRL = 0x68u;   // wired-and, inverted (ACA0)
-    COMPARATOR_PORT.PIN7CTRL = 0x2bu;   // wired-and, sense level (ACA1)
+    COMPARATOR_PORT.PIN7CTRL = 0x68u;   // wired-and, inverted (ACA0)
+    COMPARATOR_PORT.PIN6CTRL = 0x2bu;   // wired-and, sense level (ACA1)
     COMPARATOR_PORT.DIRSET = COMPARATOR_OUT;
     COMPARATOR_PORT.OUTCLR = COMPARATOR_OUT;
 
@@ -110,7 +110,7 @@ uint16_t getOutputVoltage() {
 }
 
 uint16_t getOutputVoltageStep() {
-    return (10862u + 2048u) / 4096u;
+    return (23500u + 2048u) / 4096u;
 }
 
 uint16_t getInputVoltage() {
