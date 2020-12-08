@@ -191,7 +191,7 @@ uint16_t getInputVoltageStep() {
 inline uint16_t computeOutputVoltage(uint16_t adc) {
     adc = (adc > 190u) ? (adc - 190u) : 0;
     uint32_t tmp = adc;
-    tmp *= 20927u;
+    tmp *= 20534u;
     tmp += 2048u;
     tmp /= 4096u;
     return (uint16_t) tmp;
