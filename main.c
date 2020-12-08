@@ -61,18 +61,22 @@ int main(void) {
             int16_t c = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
             if(c >= 0) {
                 if(c == '\n' || c == '\r') {
-                    sendString("\r\n");
                     rxBuffer[rxCnt] = 0;
-                    processCommand((char *)rxBuffer);
+                    if(rxBuffer[0]) {
+                        sendString("\r\n");
+                        processCommand((char *) rxBuffer);
+                    }
                     sendString("\r\n> ");
                     rxCnt = 0;
-                } else {
-                    if(c == '\b') {
-                        if(rxCnt)
-                            --rxCnt;
-                    } else {
-                        rxBuffer[rxCnt++] = c;
+                }
+                else if(c == '\b') {
+                    if(rxCnt) {
+                        sendString("\b \b");
+                        --rxCnt;
                     }
+                }
+                else {
+                    rxBuffer[rxCnt++] = c;
                     if (ok_to_send) {
                         CDC_Device_SendByte(&VirtualSerial_CDC_Interface, c);
                         CDC_Device_Flush(&VirtualSerial_CDC_Interface);

@@ -29,12 +29,12 @@ void processCommand(const char *cmd) {
     }
     if(strcmp(cmd, "enable") == 0) {
         enableRegulator(true);
-        sendString("enabled");
+        sendString("regulator output enabled");
         return;
     }
     if(strcmp(cmd, "disable") == 0) {
         enableRegulator(false);
-        sendString("disabled");
+        sendString("regulator output disabled");
         return;
     }
 
@@ -42,16 +42,16 @@ void processCommand(const char *cmd) {
         ptr = appendStr(txBuff, "output target = ");
         ptr = appendDecimal(ptr, getOutputVoltage());
 
-        ptr = appendStr(ptr, "\r\noutput voltage = ");
+        ptr = appendStr(ptr, " V\r\noutput voltage = ");
         ptr = appendDecimal(ptr, measureOutputVoltage());
 
-        ptr = appendStr(ptr, "\r\ninput target = ");
+        ptr = appendStr(ptr, " V\r\ninput target = ");
         ptr = appendDecimal(ptr, getInputVoltage());
 
-        ptr = appendStr(ptr, "\r\ninput voltage = ");
+        ptr = appendStr(ptr, " V\r\ninput voltage = ");
         ptr = appendDecimal(ptr, measureInputVoltage());
 
-        ptr = appendStr(ptr, "\r\ncomparators = ");
+        ptr = appendStr(ptr, " V\r\ncomparators = ");
         *(ptr++) = (char) ('0' + (ACA.STATUS & 0x3u));
         *ptr = 0;
 
@@ -68,6 +68,7 @@ void processCommand(const char *cmd) {
             setOutputVoltage(voltage);
             ptr = appendStr(txBuff, "output target = ");
             ptr = appendDecimal(ptr, getOutputVoltage());
+            ptr = appendStr(ptr, " V");
         }
         sendString((char *)txBuff);
         return;
@@ -82,6 +83,7 @@ void processCommand(const char *cmd) {
             setInputVoltage(voltage);
             ptr = appendStr(txBuff, "input target = ");
             ptr = appendDecimal(ptr, getInputVoltage());
+            ptr = appendStr(ptr, " V");
         }
         sendString((char *)txBuff);
         return;
@@ -90,6 +92,7 @@ void processCommand(const char *cmd) {
     if(strcmp(cmd, "get output step") == 0) {
         ptr = appendStr(txBuff, "output voltage step size = ");
         ptr = appendDecimal(ptr, getOutputVoltageStep());
+        ptr = appendStr(ptr, " V");
         sendString((char *)txBuff);
         return;
     }
@@ -97,6 +100,7 @@ void processCommand(const char *cmd) {
     if(strcmp(cmd, "get input step") == 0) {
         ptr = appendStr(txBuff, "input voltage step size = ");
         ptr = appendDecimal(ptr, getInputVoltageStep());
+        ptr = appendStr(ptr, " V");
         sendString((char *)txBuff);
         return;
     }
