@@ -61,7 +61,7 @@ void initRegulator() {
     DACB.CH1OFFSETCAL = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, DACB1OFFCAL));
     DACB.CH1GAINCAL   = pgm_read_byte(offsetof(NVM_PROD_SIGNATURES_t, DACB1GAINCAL));
     NVM.CMD = 0x00;
-    DACB.CTRLC = DAC_REFSEL_AREFA_gc; // Vcc (3.3V)
+    DACB.CTRLC = DAC_REFSEL_AVCC_gc; // Vcc (3.3V)
     DACB.CTRLB = DAC_CHSEL_DUAL_gc;
     DACB.CTRLA = DAC_IDOEN_bm | DAC_CH0EN_bm| DAC_CH1EN_bm | DAC_ENABLE_bm;
 
