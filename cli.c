@@ -56,10 +56,10 @@ void processCommand(const char *cmd) {
         ptr = appendInteger(ptr, measureFanSpeed());
 
         ptr = appendStr(ptr, " RPM\r\npulse width = ");
-        ptr = appendDecimal(ptr, ((uint32_t)TCD1.CCB) * 100 / 32);
+        ptr = appendDecimal(ptr, ((uint32_t)TCE0.CCD) * 100 / 32);
 
         ptr = appendStr(ptr, " us\r\npulse period = ");
-        ptr = appendDecimal(ptr, ((uint32_t)TCD1.PER) * 100 / 32);
+        ptr = appendDecimal(ptr, ((uint32_t)TCE0.PER) * 100 / 32);
 
         ptr = appendStr(ptr, " us\r\ncomparators = ");
         *(ptr++) = (char) ('0' + (ACA.STATUS & 0x3u));

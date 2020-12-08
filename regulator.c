@@ -44,9 +44,9 @@ void initRegulator() {
 
     ACA.AC0MUXCTRL = AC_MUXPOS_PIN3_gc | AC_MUXNEG_DAC_gc; // pin PA3 vs DAC0 (internal)
     ACA.AC1MUXCTRL = AC_MUXPOS_PIN4_gc | AC_MUXNEG_PIN5_gc; // pin PA4 vs DAC1 (pin PA5)
-    ACA.CTRLA = 0x03u;      // enable comparator outputs
-    ACA.AC0CTRL = 0x01u;    // enable comparator 0
-    ACA.AC1CTRL = 0x01u;    // enable comparator 1
+    ACA.CTRLA = AC_AC0OUT_bm | AC_AC1OUT_bm; // enable comparator outputs
+    ACA.AC0CTRL = AC_HYSMODE_SMALL_gc | AC_HSMODE_bm | AC_ENABLE_bm; // 13 mV hysteresis
+    ACA.AC1CTRL = AC_HYSMODE_SMALL_gc | AC_HSMODE_bm | AC_ENABLE_bm; // 13 mV hysteresis
 
     // configure DACB
     PORTB.DIRSET = PIN3_bm;
@@ -253,9 +253,11 @@ void updateRegulatorPulseWidth() {
     iv = computeInputVoltage(iv);
     ov = computeOutputVoltage(ov);
 
-    // compute inductor discharge voltage
+    // cap input voltage
     if(iv < 100) iv = 100;
+    // cap output voltage
     if(ov < iv) ov = iv;
+    // compute inductor discharge voltage (add 0.5V diode drop)
     uint16_t dv = ov - iv + 50;
 
     // compute charge width
@@ -268,8 +270,8 @@ void updateRegulatorPulseWidth() {
     tmp /= dv;
     uint16_t dw = tmp;
 
-    // compute pwm period
-    pwPeriod = pwCharge + dw + 4;
+    // compute pwm period (pad with 250 ns)
+    pwPeriod = pwCharge + dw + 8;
     pwUpdateA = 1;
     pwUpdateB = 1;
 }
