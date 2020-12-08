@@ -48,6 +48,7 @@ void initRegulator() {
 
     ACA.AC0MUXCTRL = AC_MUXPOS_PIN3_gc | AC_MUXNEG_DAC_gc; // pin PA3 vs DAC0 (internal)
     ACA.AC1MUXCTRL = AC_MUXPOS_PIN4_gc | AC_MUXNEG_PIN5_gc; // pin PA4 vs DAC1 (pin PA5)
+    ACA.CTRLA = AC_AC0OUT_bm | AC_AC1OUT_bm; // enable comparator outputs
     ACA.AC0CTRL = AC_HYSMODE_SMALL_gc | AC_HSMODE_bm | AC_ENABLE_bm; // 13 mV hysteresis
     ACA.AC1CTRL = AC_HYSMODE_SMALL_gc | AC_HSMODE_bm | AC_ENABLE_bm; // 13 mV hysteresis
 
@@ -275,29 +276,18 @@ void updateRegulatorPulseWidth() {
 
     // compute pwm period (pad with 250 ns)
     pwPeriod = pwCharge + dw + 8;
-    pwUpdateA = 1;
-    pwUpdateB = 1;
+    TCE0.INTCTRLA |= TC_OVFINTLVL_HI_gc;
+    TCE0.INTCTRLB |= TC_CCAINTLVL_HI_gc;
 }
 
 ISR(TCE0_OVF_vect) {
-    uint8_t comp = ACA.STATUS & 0x30u;
-    if(comp == 0x30u) {
-        PORTA.OUTSET = PIN6_bm | PIN7_bm;
-    } else {
-        PORTA.OUTCLR = PIN6_bm | PIN7_bm;
-    }
-
-    if(pwUpdateA) {
-        TCE0.CCD = pwCharge;
-        TCE0.CCA = pwPeriod >> 1u;
-        TCE0.PER = pwPeriod;
-        pwUpdateA = 0;
-    }
+    TCE0.CCD = pwCharge;
+    TCE0.CCA = pwPeriod >> 1u;
+    TCE0.PER = pwPeriod;
+    TCE0.INTCTRLA &= ~TC0_OVFINTLVL_gm;
 }
 
 ISR(TCE0_CCA_vect) {
-    if(pwUpdateB) {
-        TCD1.CCB = pwCharge;
-        pwUpdateB = 0;
-    }
+    TCD1.CCB = pwCharge;
+    TCE0.INTCTRLB &= ~TC0_CCAINTLVL_gm;
 }
