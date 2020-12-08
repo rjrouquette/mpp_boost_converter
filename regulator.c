@@ -178,7 +178,7 @@ uint16_t getOutputVoltageStep() {
 
 uint16_t getInputVoltage() {
     uint32_t tmp = DACB.CH1DATA & 0xfffu;
-    tmp *= 8887u;
+    tmp *= 10862u;
     tmp += 2048u;
     tmp /= 4096u;
     return (uint16_t) tmp;
@@ -214,7 +214,7 @@ ISR(ADCA_CH0_vect) {
 inline uint16_t computeInputVoltage(uint16_t adc) {
     adc = (adc > 190u) ? (adc - 190u) : 0;
     uint32_t tmp = adc;
-    tmp *= 10862u;
+    tmp *= 8887u;
     tmp += 2048u;
     tmp /= 4096u;
     return (uint16_t) tmp;
