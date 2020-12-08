@@ -87,6 +87,7 @@ int main(void) {
 
         CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
         USB_USBTask();
+        updateRegulatorPulseWidth();
     }
 
     return 0;

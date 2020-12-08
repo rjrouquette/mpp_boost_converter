@@ -9,6 +9,7 @@
 #include <stdbool.h>
 
 void initRegulator();
+void updateRegulatorPulseWidth();
 void enableRegulator(bool enabled);
 void setOutputVoltage(uint16_t limit);
 void setInputVoltage(uint16_t limit);

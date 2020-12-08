@@ -55,7 +55,13 @@ void processCommand(const char *cmd) {
         ptr = appendStr(ptr, " V\r\nfan speed = ");
         ptr = appendInteger(ptr, measureFanSpeed());
 
-        ptr = appendStr(ptr, " RPM\r\ncomparators = ");
+        ptr = appendStr(ptr, " RMP\r\npulse width = ");
+        ptr = appendDecimal(ptr, ((uint32_t)TCD1.CCB) * 100 / 32);
+
+        ptr = appendStr(ptr, " us\r\npulse period = ");
+        ptr = appendDecimal(ptr, ((uint32_t)TCD1.PER) * 100 / 32);
+
+        ptr = appendStr(ptr, " us\r\ncomparators = ");
         *(ptr++) = (char) ('0' + (ACA.STATUS & 0x3u));
         *ptr = 0;
 
@@ -80,9 +86,9 @@ void processCommand(const char *cmd) {
 
     if(strncmp(cmd, "set input ", 10) == 0) {
         uint16_t voltage;
-        if(!parseDecimal(cmd+11, &voltage)) {
+        if(!parseDecimal(cmd+10, &voltage)) {
             ptr = appendStr(txBuff, "Invalid Value: ");
-            ptr = appendStr(ptr, cmd+11);
+            ptr = appendStr(ptr, cmd+10);
         } else {
             setInputVoltage(voltage);
             ptr = appendStr(txBuff, "input target = ");
