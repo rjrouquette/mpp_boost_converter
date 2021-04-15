@@ -1,2 +1,2 @@
 # MPP Boost Converter
-DC-DC boost convert with maximum power point tracking and monitoring. 
+DC-DC boost converter with maximum power point tracking and monitoring. 
